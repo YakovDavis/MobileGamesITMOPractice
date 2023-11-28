@@ -41,3 +41,5 @@ Builds/
 *.bak*
 Packages/
 /Packages/*
+
+Assets/Firebase/Plugins/

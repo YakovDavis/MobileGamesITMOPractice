@@ -1,29 +1,162 @@
-﻿using Photon.Pun;
+﻿using System;
+using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
+using Firebase.Analytics;
+using Photon.Realtime;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using Sentry;
 public class NetworkController : MonoBehaviourPunCallbacks
 {
-     /******************************************************
-     * Refer to the Photon documentation and scripting API for official definitions and descriptions
-     * 
-     * Documentation: https://doc.photonengine.com/en-us/pun/current/getting-started/pun-intro
-     * Scripting API: https://doc-api.photonengine.com/en/pun/v2/index.html
-     * 
-     * If your Unity editor and standalone builds do not connect with each other but the multiple standalones
-     * do then try manually setting the FixedRegion in the PhotonServerSettings during the development of your project.
-     * https://doc.photonengine.com/en-us/realtime/current/connection-and-authentication/regions
-     *
-     * ******************************************************/
-    // Start is called before the first frame update
+    public static NetworkController Instance;
+    
+    [SerializeField] private TMP_InputField nickNameInput;
+    [SerializeField] private TMP_InputField roomNameInput;
+    [SerializeField] private TMP_Text numPlayersText;
+    [SerializeField] private TMP_Text errorText;
+    [SerializeField] private TMP_Text roomNameText;
+    [SerializeField] private Transform roomListContainer;
+    [SerializeField] private GameObject roomListItemPrefab;
+    [SerializeField] private Transform playerListContainer;
+    [SerializeField] private GameObject playerListItemPrefab;
+    [SerializeField] private GameObject startGameButton;
+
+    public void Awake()
+    {
+        Instance = this;
+    }
+
     void Start()
     {
-        PhotonNetwork.ConnectUsingSettings(); //Connects to Photon master servers
-        //Other ways to make a connection can be found here: https://doc-api.photonengine.com/en/pun/v2/class_photon_1_1_pun_1_1_photon_network.html
+        Exception e = new Exception("Test exception");
+        SentrySdk.CaptureException(e);
+        Debug.Log("Connecting to server...");
+        PhotonNetwork.ConnectUsingSettings();
     }
     public override void OnConnectedToMaster()
     {
-        Debug.Log("We are now connected to the " + PhotonNetwork.CloudRegion + " server!");
+        Debug.Log("Now connected to the " + PhotonNetwork.CloudRegion + " server");
+        FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLogin);
+        PhotonNetwork.JoinLobby();
+        PhotonNetwork.AutomaticallySyncScene = true;
+    }
+
+    public override void OnJoinedLobby()
+    {
+        MenuManager.Instance.OpenMenu("MainMenu");
+        Debug.Log("Joined lobby");
+    }
+
+    public void CreateRoom()
+    {
+        if (string.IsNullOrEmpty(roomNameInput.text))
+        {
+            return;
+        }
+        PhotonNetwork.CreateRoom(roomNameInput.text);
+        MenuManager.Instance.OpenMenu("LoadingMenu");
+    }
+
+    public override void OnJoinedRoom()
+    {
+        PhotonNetwork.NickName = nickNameInput.text;
+        roomNameText.text = PhotonNetwork.CurrentRoom.Name;
+        MenuManager.Instance.OpenMenu("RoomMenu");
+
+        foreach (Transform child in playerListContainer)
+        {
+            Destroy(child.gameObject);
+        }
+        
+        foreach (var player in PhotonNetwork.PlayerList)
+        {
+            Instantiate(playerListItemPrefab, playerListContainer).GetComponent<PlayerListItem>().Setup(player);
+        }
+        
+        startGameButton.SetActive(PhotonNetwork.IsMasterClient);
+    }
+
+    public override void OnMasterClientSwitched(Player newMaster)
+    {
+        startGameButton.SetActive(PhotonNetwork.IsMasterClient);
+    }
+
+    public override void OnCreateRoomFailed(short returnCode, string message)
+    {
+        errorText.text = "Room creation failed: " + message;
+        MenuManager.Instance.OpenMenu("ErrorMenu");
+    }
+
+    public void LeaveRoom()
+    {
+        PhotonNetwork.LeaveRoom();
+        MenuManager.Instance.OpenMenu("LoadingMenu");
+    }
+
+    public void JoinRoom(RoomInfo info)
+    {
+        PhotonNetwork.JoinRoom(info.Name);
+        MenuManager.Instance.OpenMenu("LoadingMenu");
+    }
+
+    public override void OnLeftRoom()
+    {
+        MenuManager.Instance.OpenMenu("TitleMenu");
+    }
+
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        foreach (Transform t in roomListContainer)
+        {
+            Destroy(t.gameObject);
+        }
+        foreach (var room in roomList)
+        {
+            if (room.RemovedFromList)
+            {
+                continue;
+            }
+            Instantiate(roomListItemPrefab, roomListContainer).GetComponent<RoomListItem>().Setup(room);
+        }
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        foreach (Transform child in playerListContainer)
+        {
+            Destroy(child.gameObject);
+        }
+        
+        foreach (var player in PhotonNetwork.PlayerList)
+        {
+            Instantiate(playerListItemPrefab, playerListContainer).GetComponent<PlayerListItem>().Setup(player);
+        }
+    }
+    
+    public override void OnPlayerLeftRoom(Player leftPlayer)
+    {
+        foreach (Transform child in playerListContainer)
+        {
+            Destroy(child.gameObject);
+        }
+        
+        foreach (var player in PhotonNetwork.PlayerList)
+        {
+            Instantiate(playerListItemPrefab, playerListContainer).GetComponent<PlayerListItem>().Setup(player);
+        }
+    }
+
+    public void Update()
+    {
+        int numPlayers=PhotonNetwork.CountOfPlayers;
+        numPlayersText.text="Number of Players: " + numPlayers.ToString() + "/20"; //20 because we are on the free tier
+    }
+
+    public void StartGame()
+    {
+        PhotonNetwork.LoadLevel(1);
     }
 }
 

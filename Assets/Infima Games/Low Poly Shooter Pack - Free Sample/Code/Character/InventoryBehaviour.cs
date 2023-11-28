@@ -1,5 +1,6 @@
 ﻿// Copyright 2021, Infima Games. All Rights Reserved.
 
+using Photon.Pun;
 using UnityEngine;
 
 namespace InfimaGames.LowPolyShooterPack
@@ -7,7 +8,7 @@ namespace InfimaGames.LowPolyShooterPack
     /// <summary>
     /// Abstract Inventory Class. Helpful so you can implement your own inventory system!
     /// </summary>
-    public abstract class InventoryBehaviour : MonoBehaviour
+    public abstract class InventoryBehaviour : MonoBehaviourPunCallbacks
     {
         #region GETTERS
 

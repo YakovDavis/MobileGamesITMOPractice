@@ -3,6 +3,8 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
+using TouchControlsKit;
 using UnityEngine.InputSystem;
 
 namespace InfimaGames.LowPolyShooterPack
@@ -125,6 +127,11 @@ namespace InfimaGames.LowPolyShooterPack
 		/// Look Axis Values.
 		/// </summary>
 		private Vector2 axisMovement;
+
+		/// <summary>
+		/// Jump Input Value.
+		/// </summary>
+		private bool jumpInput;
 		
 		/// <summary>
 		/// True if the player is holding the aiming button.
@@ -144,13 +151,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		private bool tutorialTextVisible;
 
-		/// <summary>
-		/// True if the game cursor is locked! Used when pressing "Escape" to allow developers to more easily access the editor.
-		/// </summary>
-		private bool cursorLocked;
-
 		#endregion
 
+		private PhotonView PV;
+		
 		#region CONSTANTS
 
 		/// <summary>
@@ -169,14 +173,7 @@ namespace InfimaGames.LowPolyShooterPack
 
 		protected override void Awake()
 		{
-			#region Lock Cursor
-
-			//Always make sure that our cursor is locked when the game starts!
-			cursorLocked = true;
-			//Update the cursor's state.
-			UpdateCursorState();
-
-			#endregion
+			PV = GetComponent<PhotonView>();
 
 			//Cache the CharacterKinematics component.
 			characterKinematics = GetComponent<CharacterKinematics>();
@@ -189,6 +186,12 @@ namespace InfimaGames.LowPolyShooterPack
 		}
 		protected override void Start()
 		{
+			if (!GetComponent<PhotonView>().IsMine)
+			{
+				Destroy(GetComponentInChildren<Camera>().gameObject);
+				Destroy(GetComponent<Rigidbody>());
+			}
+			
 			//Cache a reference to the holster layer's index.
 			layerHolster = characterAnimator.GetLayerIndex("Layer Holster");
 			//Cache a reference to the action layer's index.
@@ -250,12 +253,17 @@ namespace InfimaGames.LowPolyShooterPack
 		public override bool IsRunning() => running;
 		
 		public override bool IsAiming() => aiming;
-		public override bool IsCursorLocked() => cursorLocked;
 		
 		public override bool IsTutorialTextVisible() => tutorialTextVisible;
 		
 		public override Vector2 GetInputMovement() => axisMovement;
 		public override Vector2 GetInputLook() => axisLook;
+		public override bool GetInputJump() => jumpInput;
+
+		public override void SetInputJump(bool val)
+		{
+			jumpInput = val;
+		}
 
 		#endregion
 
@@ -381,17 +389,6 @@ namespace InfimaGames.LowPolyShooterPack
 			lastShotTime = Time.time;
 			//Play.
 			characterAnimator.CrossFade("Fire Empty", 0.05f, layerOverlay, 0);
-		}
-
-		/// <summary>
-		/// Updates the cursor state based on the value of the cursorLocked variable.
-		/// </summary>
-		private void UpdateCursorState()
-		{
-			//Update cursor visibility.
-			Cursor.visible = !cursorLocked;
-			//Update cursor lock state.
-			Cursor.lockState = cursorLocked ? CursorLockMode.Locked : CursorLockMode.None;
 		}
 
 		/// <summary>
@@ -561,9 +558,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryFire(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 
 			//Switch.
 			switch (context)
@@ -606,9 +604,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryPlayReload(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 			
 			//Block.
 			if (!CanPlayAnimationReload())
@@ -630,9 +629,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryInspect(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 			
 			//Block.
 			if (!CanPlayAnimationInspect())
@@ -653,9 +653,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryAiming(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 
 			//Switch.
 			switch (context.phase)
@@ -676,9 +677,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryHolster(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 			
 			//Switch.
 			switch (context.phase)
@@ -701,9 +703,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryRun(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 			
 			//Switch.
 			switch (context.phase)
@@ -725,9 +728,10 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnTryInventoryNext(InputAction.CallbackContext context)
 		{
-			//Block while the cursor is unlocked.
-			if (!cursorLocked)
+			if (!PV.IsMine)
+			{
 				return;
+			}
 			
 			//Null Check.
 			if (inventory == null)
@@ -753,20 +757,18 @@ namespace InfimaGames.LowPolyShooterPack
 					break;
 			}
 		}
-		
-		public void OnLockCursor(InputAction.CallbackContext context)
+
+		/// <summary>
+		/// Jump.
+		/// </summary>
+		public void OnTryJump(InputAction.CallbackContext context)
 		{
-			//Switch.
-			switch (context)
+			if (!PV.IsMine)
 			{
-				//Performed.
-				case {phase: InputActionPhase.Performed}:
-					//Toggle the cursor locked value.
-					cursorLocked = !cursorLocked;
-					//Update the cursor's state.
-					UpdateCursorState();
-					break;
+				return;
 			}
+			
+			jumpInput = true;
 		}
 		
 		/// <summary>
@@ -774,16 +776,26 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		public void OnMove(InputAction.CallbackContext context)
 		{
+			if (!PV.IsMine)
+			{
+				return;
+			}
+			
 			//Read.
-			axisMovement = cursorLocked ? context.ReadValue<Vector2>() : default;
+			axisMovement = context.ReadValue<Vector2>();
 		}
 		/// <summary>
 		/// Look.
 		/// </summary>
 		public void OnLook(InputAction.CallbackContext context)
 		{
+			if (!PV.IsMine)
+			{
+				return;
+			}
+			
 			//Read.
-			axisLook = cursorLocked ? context.ReadValue<Vector2>() : default;
+			axisLook = context.ReadValue<Vector2>();
 		}
 
 		/// <summary>

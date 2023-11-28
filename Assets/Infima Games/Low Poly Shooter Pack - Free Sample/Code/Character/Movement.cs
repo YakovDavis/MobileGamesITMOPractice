@@ -1,6 +1,8 @@
 ﻿// Copyright 2021, Infima Games. All Rights Reserved.
 
+using System;
 using System.Linq;
+using Photon.Pun;
 using UnityEngine;
 
 namespace InfimaGames.LowPolyShooterPack
@@ -11,7 +13,7 @@ namespace InfimaGames.LowPolyShooterPack
         #region FIELDS SERIALIZED
 
         [Header("Audio Clips")]
-        
+
         [Tooltip("The audio clip that is played while walking.")]
         [SerializeField]
         private AudioClip audioClipWalking;
@@ -27,6 +29,9 @@ namespace InfimaGames.LowPolyShooterPack
 
         [Tooltip("How fast the player moves while running."), SerializeField]
         private float speedRunning = 9.0f;
+
+        [Tooltip("How high the player jumps."), SerializeField]
+        private float jumpForce = 9.0f;
 
         #endregion
 
@@ -57,7 +62,7 @@ namespace InfimaGames.LowPolyShooterPack
         /// Attached AudioSource.
         /// </summary>
         private AudioSource audioSource;
-        
+
         /// <summary>
         /// True if the character is currently grounded.
         /// </summary>
@@ -71,14 +76,14 @@ namespace InfimaGames.LowPolyShooterPack
         /// The player character's equipped weapon.
         /// </summary>
         private WeaponBehaviour equippedWeapon;
-        
+
         /// <summary>
         /// Array of RaycastHits used for ground checking.
         /// </summary>
         private readonly RaycastHit[] groundHits = new RaycastHit[8];
 
         #endregion
-
+        
         #region UNITY FUNCTIONS
 
         /// <summary>
@@ -87,15 +92,13 @@ namespace InfimaGames.LowPolyShooterPack
         protected override void Awake()
         {
             //Get Player Character.
-            playerCharacter = ServiceLocator.Current.Get<IGameModeService>().GetPlayerCharacter();
+            rigidBody = GetComponent<Rigidbody>();
+            playerCharacter = GetComponent<CharacterBehaviour>();
         }
 
         /// Initializes the FpsController on start.
-        protected override  void Start()
+        protected override void Start()
         {
-            //Rigidbody Setup.
-            rigidBody = GetComponent<Rigidbody>();
-            rigidBody.constraints = RigidbodyConstraints.FreezeRotation;
             //Cache the CapsuleCollider.
             capsule = GetComponent<CapsuleCollider>();
 
@@ -114,15 +117,15 @@ namespace InfimaGames.LowPolyShooterPack
             Vector3 extents = bounds.extents;
             //Radius.
             float radius = extents.x - 0.01f;
-            
+
             //Cast. This checks whether there is indeed ground, or not.
             Physics.SphereCastNonAlloc(bounds.center, radius, Vector3.down,
                 groundHits, extents.y - radius * 0.5f, ~0, QueryTriggerInteraction.Ignore);
-            
+
             //We can ignore the rest if we don't have any proper hits.
-            if (!groundHits.Any(hit => hit.collider != null && hit.collider != capsule)) 
+            if (!groundHits.Any(hit => hit.collider != null && hit.collider != capsule))
                 return;
-            
+
             //Store RaycastHits.
             for (var i = 0; i < groundHits.Length; i++)
                 groundHits[i] = new RaycastHit();
@@ -130,12 +133,12 @@ namespace InfimaGames.LowPolyShooterPack
             //Set grounded. Now we know for sure that we're grounded.
             grounded = true;
         }
-			
+
         protected override void FixedUpdate()
         {
             //Move.
             MoveCharacter();
-            
+
             //Unground.
             grounded = false;
         }
@@ -145,7 +148,7 @@ namespace InfimaGames.LowPolyShooterPack
         {
             //Get the equipped weapon!
             equippedWeapon = playerCharacter.GetInventory().GetEquipped();
-            
+
             //Play Sounds!
             PlayFootstepSounds();
         }
@@ -162,9 +165,9 @@ namespace InfimaGames.LowPolyShooterPack
             Vector2 frameInput = playerCharacter.GetInputMovement();
             //Calculate local-space direction by using the player's input.
             var movement = new Vector3(frameInput.x, 0.0f, frameInput.y);
-            
+
             //Running speed calculation.
-            if(playerCharacter.IsRunning())
+            if(movement.sqrMagnitude > 0.5f)
                 movement *= speedRunning;
             else
             {
@@ -175,8 +178,17 @@ namespace InfimaGames.LowPolyShooterPack
             //World space velocity calculation. This allows us to add it to the rigidbody's velocity properly.
             movement = transform.TransformDirection(movement);
 
+            if (playerCharacter.GetInputJump())
+            {
+                if (grounded)
+                {
+                    rigidBody.AddForce(transform.up * jumpForce);
+                }
+                playerCharacter.SetInputJump(false);
+            }
+
             #endregion
-            
+
             //Update Velocity.
             Velocity = new Vector3(movement.x, 0.0f, movement.z);
         }

@@ -153,17 +153,6 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "aeaa395a-3661-42a1-a33c-7a8c790be880",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Fire",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "8296c540-e14f-4d51-b70b-501abdfce15f",
                     "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
@@ -223,17 +212,6 @@
                     "path": "<Gamepad>/rightStick",
                     "interactions": "",
                     "processors": "ScaleVector2(x=1.2,y=1.2)",
-                    "groups": "",
-                    "action": "Look",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "b85d03ba-6afe-4100-9072-d7bb950e8849",
-                    "path": "<Pointer>/delta",
-                    "interactions": "",
-                    "processors": "ScaleVector2(x=0.05,y=0.05)",
                     "groups": "",
                     "action": "Look",
                     "isComposite": false,

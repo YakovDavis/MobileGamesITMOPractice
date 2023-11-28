@@ -1,5 +1,9 @@
 ﻿// Copyright 2021, Infima Games. All Rights Reserved.
 
+using System;
+using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
 namespace InfimaGames.LowPolyShooterPack
@@ -23,7 +27,14 @@ namespace InfimaGames.LowPolyShooterPack
         private int equippedIndex = -1;
 
         #endregion
-        
+
+        private PhotonView PV;
+
+        private void Awake()
+        {
+            PV = GetComponent<PhotonView>();
+        }
+
         #region METHODS
         
         public override void Init(int equippedAtStart = 0)
@@ -64,8 +75,23 @@ namespace InfimaGames.LowPolyShooterPack
             //Activate the newly-equipped weapon.
             equipped.gameObject.SetActive(true);
 
+            /*if (PV.IsMine)
+            {
+                Hashtable hash = new Hashtable();
+                hash.Add("itemIndex", equippedIndex);
+                PhotonNetwork.LocalPlayer.SetCustomProperties(hash);
+            }*/
+
             //Return.
             return equipped;
+        }
+
+        public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+        {
+            if (!PV.IsMine && targetPlayer == PV.Owner)
+            {
+                Equip((int)changedProps["itemIndex"]);
+            }
         }
         
         #endregion

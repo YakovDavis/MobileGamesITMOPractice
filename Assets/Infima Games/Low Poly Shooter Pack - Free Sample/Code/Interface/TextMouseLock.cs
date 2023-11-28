@@ -8,14 +8,5 @@ namespace InfimaGames.LowPolyShooterPack.Interface
     /// </summary>
     public class TextMouseLock : ElementText
     {
-        #region METHODS
-
-        protected override void Tick()
-        {
-            //Update the text based on whether the cursor is locked or not.
-            textMesh.text = "Cursor " + (playerCharacter.IsCursorLocked() ? "Locked" : "Unlocked");
-        }
-
-        #endregion
     }
 }

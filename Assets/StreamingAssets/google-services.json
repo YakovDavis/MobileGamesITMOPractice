@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "440918382731",
+    "project_id": "nocodelines",
+    "storage_bucket": "nocodelines.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:440918382731:android:228b12e2b562af24c21c8e",
+        "android_client_info": {
+          "package_name": "com.Factorizer.NoCodeLines"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA90rL1UR458EKZ_viIMpdxD2G5tIqUNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

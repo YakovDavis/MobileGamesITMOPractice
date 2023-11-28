@@ -58,10 +58,6 @@ namespace InfimaGames.LowPolyShooterPack
         /// Returns true if the character is aiming.
         /// </summary>
         public abstract bool IsAiming();
-        /// <summary>
-        /// Returns true if the game cursor is locked.
-        /// </summary>
-        public abstract bool IsCursorLocked();
 
         /// <summary>
         /// Returns true if the tutorial text should be visible on the screen.
@@ -76,6 +72,14 @@ namespace InfimaGames.LowPolyShooterPack
         /// Returns the Look Input.
         /// </summary>
         public abstract Vector2 GetInputLook();
+        /// <summary>
+        /// Returns the Jump Input.
+        /// </summary>
+        public abstract bool GetInputJump();
+        /// <summary>
+        /// Sets the Jump Input.
+        /// </summary>
+        public abstract void SetInputJump(bool val);
         
         #endregion
 
