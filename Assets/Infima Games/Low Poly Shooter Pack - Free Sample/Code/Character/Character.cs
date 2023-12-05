@@ -3,6 +3,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using Firebase.Analytics;
 using Photon.Pun;
 using TouchControlsKit;
 using UnityEngine.InputSystem;
@@ -45,6 +46,15 @@ namespace InfimaGames.LowPolyShooterPack
 		[Tooltip("Character Animator.")]
 		[SerializeField]
 		private Animator characterAnimator;
+
+		[SerializeField] private GameObject FPMesh;
+		[SerializeField] private GameObject TPMesh;
+		
+		[SerializeField] private int maxHealth = 20;
+
+		private PlayerManager playerManager;
+
+		private int health;
 
 		#endregion
 
@@ -175,6 +185,21 @@ namespace InfimaGames.LowPolyShooterPack
 		{
 			PV = GetComponent<PhotonView>();
 
+			playerManager = PhotonView.Find((int)PV.InstantiationData[0]).GetComponent<PlayerManager>();
+
+			if (PV.IsMine)
+			{
+				TPMesh.SetActive(false);
+				FPMesh.SetActive(true);
+				//equippedWeapon.gameObject.SetActive(true);
+			}
+			else
+			{
+				TPMesh.SetActive(true);
+				FPMesh.SetActive(false);
+				//equippedWeapon.gameObject.SetActive(false);
+			}
+
 			//Cache the CharacterKinematics component.
 			characterKinematics = GetComponent<CharacterKinematics>();
 
@@ -189,7 +214,7 @@ namespace InfimaGames.LowPolyShooterPack
 			if (!GetComponent<PhotonView>().IsMine)
 			{
 				Destroy(GetComponentInChildren<Camera>().gameObject);
-				Destroy(GetComponent<Rigidbody>());
+				//Destroy(GetComponent<Rigidbody>());
 			}
 			
 			//Cache a reference to the holster layer's index.
@@ -198,6 +223,8 @@ namespace InfimaGames.LowPolyShooterPack
 			layerActions = characterAnimator.GetLayerIndex("Layer Actions");
 			//Cache a reference to the overlay layer's index.
 			layerOverlay = characterAnimator.GetLayerIndex("Layer Overlay");
+
+			health = maxHealth;
 		}
 
 		protected override void Update()
@@ -206,6 +233,11 @@ namespace InfimaGames.LowPolyShooterPack
 			aiming = holdingButtonAim && CanAim();
 			//Match Run.
 			running = holdingButtonRun && CanRun();
+
+			if (!PV.IsMine)
+			{
+				return;
+			}
 
 			//Holding the firing button.
 			if (holdingButtonFire)
@@ -221,6 +253,11 @@ namespace InfimaGames.LowPolyShooterPack
 
 			//Update Animator.
 			UpdateAnimator();
+		}
+
+		public override void TakeDamage(int damage)
+		{
+			PV.RPC("RPC_TakeDamage", RpcTarget.All, damage);
 		}
 
 		protected override void LateUpdate()
@@ -274,6 +311,11 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		private void UpdateAnimator()
 		{
+			if (!PV.IsMine)
+			{
+				return;
+			}
+			
 			//Movement Value. This value affects absolute movement. Aiming movement uses this, as opposed to per-axis movement.
 			characterAnimator.SetFloat(HashMovement, Mathf.Clamp01(Mathf.Abs(axisMovement.x) + Mathf.Abs(axisMovement.y)), dampTimeLocomotion, Time.deltaTime);
 			
@@ -338,6 +380,11 @@ namespace InfimaGames.LowPolyShooterPack
 		/// </summary>
 		private IEnumerator Equip(int index = 0)
 		{
+			if (!PV.IsMine)
+			{
+				yield return new WaitUntil(() => true);
+			}
+			
 			//Only if we're not holstered, holster. If we are already, we don't need to wait.
 			if(!holstered)
 			{
@@ -661,13 +708,9 @@ namespace InfimaGames.LowPolyShooterPack
 			//Switch.
 			switch (context.phase)
 			{
-				case InputActionPhase.Started:
+				case InputActionPhase.Performed:
 					//Started.
-					holdingButtonAim = true;
-					break;
-				case InputActionPhase.Canceled:
-					//Canceled.
-					holdingButtonAim = false;
+					holdingButtonAim = !holdingButtonAim;
 					break;
 			}
 		}
@@ -858,5 +901,29 @@ namespace InfimaGames.LowPolyShooterPack
 		#endregion
 
 		#endregion
+
+		[PunRPC]
+		void RPC_TakeDamage(int damage)
+		{
+			if (!PV.IsMine)
+			{
+				return;
+			}
+            
+			Debug.Log("ouch");
+			
+			health -= damage;
+
+			if (health <= 0)
+			{
+				FirebaseAnalytics.LogEvent("player.died");
+				Die();
+			}
+		}
+
+		void Die()
+		{
+			playerManager.Die();
+		}
 	}
 }

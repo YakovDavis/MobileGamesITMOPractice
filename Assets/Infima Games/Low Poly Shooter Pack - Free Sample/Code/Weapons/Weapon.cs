@@ -1,5 +1,6 @@
 ﻿// Copyright 2021, Infima Games. All Rights Reserved.
 
+using Photon.Pun;
 using UnityEngine;
 
 namespace InfimaGames.LowPolyShooterPack
@@ -127,6 +128,8 @@ namespace InfimaGames.LowPolyShooterPack
         /// The player character's camera.
         /// </summary>
         private Transform playerCamera;
+
+        private PhotonView PV;
         
         #endregion
 
@@ -136,6 +139,7 @@ namespace InfimaGames.LowPolyShooterPack
         {
             //Get Animator.
             animator = GetComponent<Animator>();
+            PV = GetComponent<PhotonView>();
             //Get Attachment Manager.
             attachmentManager = GetComponent<WeaponAttachmentManagerBehaviour>();
 
@@ -159,6 +163,10 @@ namespace InfimaGames.LowPolyShooterPack
 
             //Max Out Ammo.
             ammunitionCurrent = magazineBehaviour.GetAmmunitionTotal();
+            if (!PV.IsMine)
+            {
+                gameObject.SetActive(false);
+            }
         }
 
         #endregion

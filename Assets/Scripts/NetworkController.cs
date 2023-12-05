@@ -122,7 +122,7 @@ public class NetworkController : MonoBehaviourPunCallbacks
         }
     }
 
-    public override void OnPlayerEnteredRoom(Player newPlayer)
+    public void RefreshPlayerList()
     {
         foreach (Transform child in playerListContainer)
         {
@@ -134,18 +134,15 @@ public class NetworkController : MonoBehaviourPunCallbacks
             Instantiate(playerListItemPrefab, playerListContainer).GetComponent<PlayerListItem>().Setup(player);
         }
     }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        RefreshPlayerList();
+    }
     
     public override void OnPlayerLeftRoom(Player leftPlayer)
     {
-        foreach (Transform child in playerListContainer)
-        {
-            Destroy(child.gameObject);
-        }
-        
-        foreach (var player in PhotonNetwork.PlayerList)
-        {
-            Instantiate(playerListItemPrefab, playerListContainer).GetComponent<PlayerListItem>().Setup(player);
-        }
+        RefreshPlayerList();
     }
 
     public void Update()

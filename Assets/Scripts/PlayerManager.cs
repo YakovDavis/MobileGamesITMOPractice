@@ -7,6 +7,8 @@ using UnityEngine;
 public class PlayerManager : MonoBehaviour
 {
     private PhotonView PV;
+
+    private GameObject controller;
     
     void Awake()
     {
@@ -23,6 +25,14 @@ public class PlayerManager : MonoBehaviour
 
     void CreateController()
     {
-        PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "PlayerController"), Vector3.up * 10, Quaternion.identity);
+        controller = PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "PlayerController"), Vector3.up * 10, Quaternion.identity, 0, new object[] { PV.ViewID });
+        PhotonNetwork.LocalPlayer.TagObject = controller;
+        PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "YBotEnemy"), Vector3.up * 10 + Vector3.right * 10, Quaternion.identity);
+    }
+
+    public void Die()
+    {
+        PhotonNetwork.Destroy(controller);
+        CreateController();
     }
 }

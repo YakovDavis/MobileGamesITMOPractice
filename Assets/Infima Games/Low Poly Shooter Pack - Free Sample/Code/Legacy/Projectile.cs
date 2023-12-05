@@ -27,7 +27,7 @@ public class Projectile : MonoBehaviour {
 		//Grab the game mode service, we need it to access the player character!
 		var gameModeService = ServiceLocator.Current.Get<IGameModeService>();
 		//Ignore the main player character's collision. A little hacky, but it should work.
-		Physics.IgnoreCollision(gameModeService.GetPlayerCharacter().GetComponent<Collider>(), GetComponent<Collider>());
+		//Physics.IgnoreCollision(gameModeService.GetPlayerCharacter().GetComponent<Collider>(), GetComponent<Collider>());
 		
 		//Start destroy timer
 		StartCoroutine (DestroyAfter ());
@@ -136,6 +136,18 @@ public class Projectile : MonoBehaviour {
 			//Toggle "isHit" on gas tank object
 			collision.transform.gameObject.GetComponent
 				<GasTankScript> ().isHit = true;
+			//Destroy bullet object
+			Destroy(gameObject);
+		}
+		
+		//If bullet collides with "IDamagable" tag
+		if (collision.gameObject.GetType() == typeof(IDamagable)) 
+		{
+			Instantiate (bloodImpactPrefabs [Random.Range 
+					(0, bloodImpactPrefabs.Length)], transform.position, 
+				Quaternion.LookRotation (collision.contacts [0].normal));
+			collision.transform.gameObject.GetComponent
+				<IDamagable>().TakeDamage(5);
 			//Destroy bullet object
 			Destroy(gameObject);
 		}

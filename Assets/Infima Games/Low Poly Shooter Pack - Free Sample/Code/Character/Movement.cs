@@ -167,7 +167,7 @@ namespace InfimaGames.LowPolyShooterPack
             var movement = new Vector3(frameInput.x, 0.0f, frameInput.y);
 
             //Running speed calculation.
-            if(movement.sqrMagnitude > 0.5f)
+            if(movement.sqrMagnitude > 0.2f)
                 movement *= speedRunning;
             else
             {

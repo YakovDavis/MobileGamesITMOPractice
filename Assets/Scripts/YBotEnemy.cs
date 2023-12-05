@@ -6,8 +6,10 @@ using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
-public class YBotEnemy : MonoBehaviour, IEnemy
+public class YBotEnemy : MonoBehaviour, IDamagable
 {
+    private Animator animator;
+    
     public NavMeshAgent agent;
 
     public Transform player;
@@ -30,11 +32,15 @@ public class YBotEnemy : MonoBehaviour, IEnemy
     public int maxHealth = 20;
 
     private int health;
+    
+    private PhotonView PV;
 
     private void Awake()
     {
-        player = GameObject.Find("PlayerController").transform;
+        PV = GetComponent<PhotonView>();
+        player = ((GameObject)PhotonNetwork.LocalPlayer.TagObject).transform;
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
     }
 
     private void Start()
@@ -54,12 +60,24 @@ public class YBotEnemy : MonoBehaviour, IEnemy
         }
         if (playerInSightRange && !playerInAttackRange)
         {
+            animator.SetBool("chasing", true);
             ChasePlayer();
         }
+        animator.SetFloat("speed", 5);
         if (playerInSightRange && playerInAttackRange)
         {
             AttackPlayer();
         }
+    }
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.layer == 15)
+        {
+            Destroy(other.gameObject);
+        }
+
+        TakeDamage(5); // todo RPC
     }
 
     private void Patrolling()
@@ -112,8 +130,7 @@ public class YBotEnemy : MonoBehaviour, IEnemy
         if (!alreadyAttacked)
         {
             // Attack code
-            //
-            // TODO
+            animator.SetTrigger("TrAttack");
             
             alreadyAttacked = true;
             Invoke(nameof(ResetAttack), timeBetweenAttacks);
@@ -127,14 +144,26 @@ public class YBotEnemy : MonoBehaviour, IEnemy
 
     public void TakeDamage(int damage)
     {
+        PV.RPC("RPC_YbotTakeDamage", RpcTarget.All, damage);
+    }
+
+    [PunRPC]
+    public void RPC_YbotTakeDamage(int damage)
+    {
+        if (!PV.IsMine)
+        {
+            return;
+        }
         health -= damage;
-        
-        if (health <= 0) Invoke(nameof(DestroyEnemy), 2.0f);
+        if (health <= 0)
+        {
+            DestroyEnemy();
+        }
     }
 
     public void DestroyEnemy()
     {
-        Destroy(gameObject);
+        PhotonNetwork.Destroy(gameObject);
     }
 
     private void OnDrawGizmosSelected()

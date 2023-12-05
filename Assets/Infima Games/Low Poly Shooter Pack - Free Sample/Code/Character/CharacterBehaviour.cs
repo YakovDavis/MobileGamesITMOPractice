@@ -7,7 +7,7 @@ namespace InfimaGames.LowPolyShooterPack
     /// <summary>
     /// Character Abstract Behaviour.
     /// </summary>
-    public abstract class CharacterBehaviour : MonoBehaviour
+    public abstract class CharacterBehaviour : MonoBehaviour, IDamagable
     {
         #region UNITY
 
@@ -114,5 +114,10 @@ namespace InfimaGames.LowPolyShooterPack
         public abstract void AnimationEndedHolster();
 
         #endregion
+
+        public virtual void TakeDamage(int damage)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }
